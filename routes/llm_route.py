@@ -15,12 +15,10 @@ router = APIRouter()
 
 redis_client = redis.StrictRedis(host='localhost', port=6379, db=0, decode_responses=True)
 
+# Inicializa os modelos ASR, LLM e TTS uma vez
 asr_model = ASRModel()
 llm_model = LLMModel()
-tts_models = {
-    '1': TTSModel("tts_models/multilingual/multi-dataset/xtts_v2"), #"tts_models/en/ljspeech/vits--neon"
-    # Adicione mais modelos conforme necessário para outros códigos de imagem
-}
+tts_model = TTSModel("tts_models/multilingual/multi-dataset/xtts_v2")  # Carrega o modelo TTS uma única vez
 
 SESSION_TTL = 900  # TTL em segundos (15 minutos)
 
@@ -84,7 +82,7 @@ async def llmpost(session_id: str = Form(...), audio_file: UploadFile = File(...
         if not conversation_context:
             conversation_context = [
                 " These are your premises: follow them, only respond to what is said after your premises"
-                + " limit your answer to 100 characters maximum,"
+                + " limit your answer to 20 words maximum,"
                 + " you are an " + language + " language teacher, your mission is to help me learn more, correct my mistakes in a friendly way,"
                 + " your name is " + nameGuardian + ', ' + genderGuardian
                 + " also correct me if I conjugate the wrong verb, help me to be fluent in " + language
@@ -93,8 +91,8 @@ async def llmpost(session_id: str = Form(...), audio_file: UploadFile = File(...
                 + " If my sentence is strange, try to understand the context of our conversation and ask if something similar to the words I said is actually correct,"
                 + " If you create a list, do not number it or use symbols, instead, add commas and skip 2 lines"
                 + " put a small pause when there are line breaks: "
-                + " you must respond in " + language + " (end of premises) "
-            ]
+                + " you should prefer to respond in " + language + " however, if you see that I am having difficulty, respond in the language I am speaking to you. (end of premises) "
+           ]
 
         conversation_context.append(speech_text)
         set_session(session_id, conversation_context)
@@ -108,8 +106,6 @@ async def llmpost(session_id: str = Form(...), audio_file: UploadFile = File(...
 
         conversation_context.append(response)
         set_session(session_id, conversation_context)
-
-        tts_model = tts_models.get(image_code, tts_models['1'])
 
         if image_code == '1':
             audio_response = tts_model.synthesize(text=response, speaker_wav=["gato_cinza_alfa.wav"], language=language_code)

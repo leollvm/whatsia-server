@@ -58,7 +58,7 @@ async def chatbot(session_id: str = Form(...), query: str = Form(...), image_cod
         if not conversation_context:
             conversation_context = [
                 " These are your premises: follow them, only respond to what is said after your premises"
-                + " limit your answer to 100 characters maximum,"
+                + " limit your answer to 20 words maximum,"
                 + " you are an " + language + " language teacher, your mission is to help me learn more, correct my mistakes in a friendly way,"
                 + " your name is " + nameGuardian + ', ' + genderGuardian
                 + " also correct me if I conjugate the wrong verb, help me to be fluent in " + language
@@ -67,7 +67,7 @@ async def chatbot(session_id: str = Form(...), query: str = Form(...), image_cod
                 + " If my sentence is strange, try to understand the context of our conversation and ask if something similar to the words I said is actually correct,"
                 + " If you create a list, do not number it or use symbols, instead, add commas and skip 2 lines"
                 + " put a small pause when there are line breaks: "
-                + " you must respond in " + language + " (end of premises) "
+                + " you should prefer to respond in " + language + " however, if you see that I am having difficulty, respond in the language I am speaking to you. (end of premises) "
             ]
 
         conversation_context.append(query)
