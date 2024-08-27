@@ -41,13 +41,12 @@ async def llmpost(session_id: str = Form(...), audio_file: UploadFile = File(...
     temp_file_path = ""
     try:
         # Gera um nome único para o arquivo temporário
-        unique_filename = f"{uuid.uuid4()}.wav"
+        unique_filename = f"{uuid.uuid4().hex}.wav"  # Usar uuid4().hex para garantir um nome único
+        temp_file_path = os.path.join(tempfile.gettempdir(), unique_filename)
         
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav", dir=tempfile.gettempdir()) as tmp:
-            temp_file_path = tmp.name
-            async with aiofiles.open(temp_file_path, 'wb') as out_file:
-                content = await audio_file.read()
-                await out_file.write(content)
+        async with aiofiles.open(temp_file_path, 'wb') as out_file:
+            content = await audio_file.read()
+            await out_file.write(content)
 
         try:
             transcription_result = asr_model.transcribe(temp_file_path)
