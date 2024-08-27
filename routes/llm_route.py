@@ -3,6 +3,7 @@ import tempfile
 import json
 import aiofiles
 import redis
+import uuid
 from fastapi import APIRouter, HTTPException, Form, UploadFile, File
 from fastapi.responses import StreamingResponse
 from models.asr_model import ASRModel
@@ -39,7 +40,10 @@ async def llmpost(session_id: str = Form(...), audio_file: UploadFile = File(...
 
     temp_file_path = ""
     try:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
+        # Gera um nome único para o arquivo temporário
+        unique_filename = f"{uuid.uuid4()}.wav"
+        
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav", dir=tempfile.gettempdir()) as tmp:
             temp_file_path = tmp.name
             async with aiofiles.open(temp_file_path, 'wb') as out_file:
                 content = await audio_file.read()
@@ -52,28 +56,18 @@ async def llmpost(session_id: str = Form(...), audio_file: UploadFile = File(...
 
         speech_text = transcription_result['text']
 
-        if language_code == 'en':
-            language = 'English'
-        elif language_code == 'es':
-            language = 'Spanish'
-        elif language_code == 'pt':
-            language = 'Portuguese'
-        else:
-            language = 'English'
+        language_map = {
+            'en': 'English',
+            'es': 'Spanish',
+            'pt': 'Portuguese'
+        }
+        language = language_map.get(language_code, 'English')
 
-        if image_code == '1':
-            nameGuardian = 'Sakura'
-        elif image_code == '2':
-            nameGuardian = 'Mio'
-        else:
-            nameGuardian = 'Sakura'
-
-        if image_code == '1':
-            genderGuardian = 'Feminine'
-        elif image_code == '2':
-            genderGuardian = 'Male'
-        else:
-            genderGuardian = 'Feminine'
+        guardian_map = {
+            '1': ('Sakura', 'Feminine'),
+            '2': ('Mio', 'Male')
+        }
+        nameGuardian, genderGuardian = guardian_map.get(image_code, ('Sakura', 'Feminine'))
 
         if not session_id:
             raise HTTPException(status_code=400, detail="Missing 'session_id' field in form data")
@@ -107,6 +101,7 @@ async def llmpost(session_id: str = Form(...), audio_file: UploadFile = File(...
         conversation_context.append(response)
         set_session(session_id, conversation_context)
 
+        audio_response = None
         if image_code == '1':
             audio_response = tts_model.synthesize(text=response, speaker_wav=["gato_cinza_alfa.wav"], language=language_code)
         elif image_code == '2':
@@ -130,5 +125,5 @@ async def llmpost(session_id: str = Form(...), audio_file: UploadFile = File(...
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Failed to process audio segment: {str(e)}")
     finally:
-        if temp_file_path:
+        if temp_file_path and os.path.exists(temp_file_path):
             os.remove(temp_file_path)

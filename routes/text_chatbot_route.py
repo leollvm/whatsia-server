@@ -31,28 +31,18 @@ async def chatbot(session_id: str = Form(...), query: str = Form(...), image_cod
         if not session_id or not query or not image_code:
             raise HTTPException(status_code=400, detail="session_id, query, and image_code are required")
 
-        if language_code == 'en':
-            language = 'English'
-        elif language_code == 'es':
-            language = 'Spanish'
-        elif language_code == 'pt':
-            language = 'Portuguese'
-        else:
-            language = 'English'
+        language_map = {
+            'en': 'English',
+            'es': 'Spanish',
+            'pt': 'Portuguese'
+        }
+        language = language_map.get(language_code, 'English')
 
-        if image_code == '1':
-            nameGuardian = 'Sakura'
-        elif image_code == '2':
-            nameGuardian = 'Mio'
-        else:
-            nameGuardian = 'Sakura'
-        
-        if image_code == '1':
-            genderGuardian = 'Feminine'
-        elif image_code == '2':
-            genderGuardian = 'Male'
-        else:
-            genderGuardian = 'Feminine'
+        guardian_map = {
+            '1': ('Sakura', 'Feminine'),
+            '2': ('Mio', 'Male')
+        }
+        nameGuardian, genderGuardian = guardian_map.get(image_code, ('Sakura', 'Feminine'))
 
         conversation_context = get_session(session_id)
         if not conversation_context:
